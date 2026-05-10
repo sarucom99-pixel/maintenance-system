@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Asset {
+  id                  String         @id @default(uuid())
+  assetCode           String         @unique
+  name                String
+  category            String?
+  location            String?
+  parentId            String?
+  parent              Asset?         @relation("AssetHierarchy", fields: [parentId], references: [id])
+  children            Asset[]        @relation("AssetHierarchy")
+  status              String         @default("active")
+  criticality         Int            @default(1)
+  maintenanceCycleDays Int?           @default(30) // 自動スケジュールの間隔（日）
+  installDate         DateTime?
+  manufacturer        String?
+  modelNumber         String?
+  manualUrl           String?
+  workOrders          WorkOrder[]
+  meterReadings       MeterReading[]
+  parts               AssetPart[]
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+}
+
+model WorkOrder {
+  id              String         @id @default(uuid())
+  assetId         String
+  asset           Asset          @relation(fields: [assetId], references: [id])
+  staffId         String?        // 担当スタッフID
+  staff           Staff?         @relation(fields: [staffId], references: [id])
+  title           String
+  description     String?
+  orderType       String         // preventative, corrective, inspection
+  priority        String         // low, medium, high, emergency
+  status          String         @default("open") // open, in_progress, completed, cancelled
+  assignedTo      String?        // 互換性のための残し、将来的にstaffIdへ移行
+  scheduledDate   DateTime?
+  completedAt     DateTime?
+  workHours       Decimal?
+  photoUrls       String[]
+  partUsages      PartUsage[]
+  notes           String?
+  createdAt       DateTime       @default(now())
+}
+
+model Staff {
+  id              String         @id @default(uuid())
+  name            String
+  role            String         // senior_tech, technician, apprentice
+  avatarUrl       String?
+  workOrders      WorkOrder[]
+  points          Int            @default(0) // 貢献ポイント
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+model Part {
+  id              String         @id @default(uuid())
+  partCode        String         @unique
+  name            String
+  description     String?
+  stockQuantity   Int            @default(0)
+  reorderPoint    Int            @default(5)
+  unitPrice       Decimal?
+  location        String?        // 倉庫の棚番号など
+  assets          AssetPart[]
+  usages          PartUsage[]
+  poItems         PurchaseOrderItem[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model PurchaseOrder {
+  id              String         @id @default(uuid())
+  poNumber        String         @unique
+  status          String         @default("pending") // pending, approved, ordered, received, cancelled
+  totalAmount     Decimal?
+  items           PurchaseOrderItem[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model PurchaseOrderItem {
+  id              String         @id @default(uuid())
+  purchaseOrderId String
+  partId          String
+  quantity        Int
+  unitPrice       Decimal?
+  purchaseOrder   PurchaseOrder  @relation(fields: [purchaseOrderId], references: [id])
+  part            Part           @relation(fields: [partId], references: [id])
+}
+
+model AssetPart {
+...
+  assetId String
+  partId  String
+  asset   Asset @relation(fields: [assetId], references: [id])
+  part    Part  @relation(fields: [partId], references: [id])
+  @@id([assetId, partId])
+}
+
+model PartUsage {
+  id          String    @id @default(uuid())
+  workOrderId String
+  partId      String
+  quantity    Int
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id])
+  part        Part      @relation(fields: [partId], references: [id])
+  usedAt      DateTime  @default(now())
+}
+
+model MeterReading {
+  id              Int            @id @default(autoincrement())
+  assetId         String
+  asset           Asset          @relation(fields: [assetId], references: [id])
+  readingType     String         // running_hours, temperature, vibration_level
+  value           Decimal
+  unit            String         // hours, celsius, mm/s
+  recordedAt      DateTime       @default(now())
+}
