@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model Asset {
@@ -98,7 +97,6 @@ model PurchaseOrderItem {
 }
 
 model AssetPart {
-...
   assetId String
   partId  String
   asset   Asset @relation(fields: [assetId], references: [id])

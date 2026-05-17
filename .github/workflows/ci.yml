@@ -1,0 +1,37 @@
+name: Maintenance System CI
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'maintenance-system/**'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'maintenance-system/**'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./maintenance-system
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js 24.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24.x'
+        cache: 'npm'
+        cache-dependency-path: './maintenance-system/package-lock.json'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run Lint
+      run: npm run lint
+
+    - name: Build
+      run: npm run build

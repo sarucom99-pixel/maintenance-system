@@ -3,34 +3,34 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 export async function checkStockAndGeneratePO() {
-  // 1. 在庫が発注点を下回っている部品を取得
-  const lowStockParts = await prisma.part.findMany({
+  // 1. 在庫不足部品の抽出
+  const lowStockParts = await (prisma.part as any).findMany({
     where: {
       stockQuantity: {
-        lt: prisma.part.fields.reorderPoint,
+        lt: (prisma.part as any).fields.reorderPoint,
       },
     },
   });
 
   if (lowStockParts.length === 0) return null;
 
-  // 2. 発注依頼メール（プロフェッショナル・テンプレート）の作成
+  // 2. 発注書のHTML生成
   const poDate = new Date().toLocaleDateString("ja-JP");
   const poId = `PO-${Date.now().toString().slice(-6)}`;
   
   let poContent = `
     <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
       <div style="text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 10px; margin-bottom: 20px;">
-        <h1 style="color: #2563eb; margin: 0;">MainteHub 発注依頼</h1>
-        <p style="font-size: 14px; color: #666;">購買管理システム自動発行</p>
+        <h1 style="color: #2563eb; margin: 0;">MainteHub 発注依頼書</h1>
+        <p style="font-size: 14px; color: #666;">インテリジェンス・メンテナンス・プラットフォーム</p>
       </div>
 
       <div style="margin-bottom: 20px;">
-        <p><strong>管理番号:</strong> ${poId}</p>
+        <p><strong>発注番号:</strong> ${poId}</p>
         <p><strong>発行日:</strong> ${poDate}</p>
       </div>
 
-      <p>在庫が発注点を下回ったため、以下の部品の発注を依頼します。</p>
+      <p>在庫が再注文点（発注点）を下回った以下の部品について、至急発注をお願いいたします。</p>
 
       <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
         <thead>
@@ -43,7 +43,7 @@ export async function checkStockAndGeneratePO() {
         <tbody>
   `;
 
-  lowStockParts.forEach(part => {
+  lowStockParts.forEach((part: any) => {
     const suggestQty = part.reorderPoint * 2;
     poContent += `
       <tr>
@@ -51,7 +51,7 @@ export async function checkStockAndGeneratePO() {
           <div style="font-weight: bold;">${part.name}</div>
           <div style="font-size: 12px; color: #666;">${part.partCode}</div>
         </td>
-        <td style="border: 1px solid #e2e8f0; padding: 10px; text-align: center; color: #dc2626; font-weight: bold;">${part.stockQuantity}</td>
+        <td style="border: 1px solid #e2e8f0; padding: 10px; text-align: center; color: #dc2626; font-weight: bold;">${part.stockQuantity}</td>     
         <td style="border: 1px solid #e2e8f0; padding: 10px; text-align: center;">${suggestQty}</td>
       </tr>
     `;
@@ -63,7 +63,7 @@ export async function checkStockAndGeneratePO() {
 
       <div style="background-color: #fefce8; border: 1px solid #fef08a; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
         <p style="margin: 0; font-size: 14px; color: #854d0e;">
-          <strong>補足:</strong> 上記数量は過去の使用頻度から算出した推奨値です。承認後、サプライヤーへの発注処理を開始してください。
+          <strong>補足事項:</strong> 上記推奨数は過去の稼働実績およびリードタイムを考慮して算出されています。承認後、サプライヤーへの発注処理を開始してください。
         </p>
       </div>
 
@@ -72,7 +72,7 @@ export async function checkStockAndGeneratePO() {
       </div>
 
       <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #999; text-align: center;">
-        本メールはシステムによる自動送信です。返信は受け付けておりません。
+        本メールはシステムにより自動生成されました。返信はできません。
       </div>
     </div>
   `;

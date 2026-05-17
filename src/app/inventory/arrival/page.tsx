@@ -4,10 +4,10 @@ import React, { useState } from "react";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 
 // モックデータ (スキャン後の表示用)
-const mockPartsDatabase: Record<string, {name: string, currentStock: number, location: string}> = {
-  "BRG-001": { name: "高精度ベアリング", currentStock: 12, location: "棚 A-1" },
-  "BELT-V": { name: "Vベルト (Type B)", currentStock: 3, location: "棚 B-4" },
-  "OIL-HYD": { name: "作動油 20L", currentStock: 8, location: "油脂庫" },
+const mockPartsDatabase: Record<string, {name: string, current: number, location: string}> = {
+  "BRG-001": { name: "高精度ベアリング", current: 12, location: "棚 A-1" },
+  "BELT-V": { name: "Vベルト (Type B)", current: 3, location: "棚 B-4" },
+  "OIL-HYD": { name: "作動油 20L", current: 8, location: "油脂庫" },
 };
 
 export default function ArrivalPage() {
